@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescueSync Agent - AI Disaster Coordinator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: #ff6b6b;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.8em; margin-bottom: 10px; }
+        .header p { font-size: 1.3em; opacity: 0.95; }
+        .content { padding: 40px; }
+        
+        /* NEW: Scenario selector */
+        .scenario-selector {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .scenario-selector h3 { color: #856404; margin-bottom: 15px; }
+        .scenario-selector select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .scenario-box {
+            background: #f8f9fa;
+            border-left: 5px solid #ff6b6b;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .scenario-box h3 { color: #ff6b6b; margin-bottom: 15px; font-size: 1.5em; }
+        .scenario-box ul { margin-left: 25px; margin-top: 15px; }
+        .scenario-box li { margin: 10px 0; line-height: 1.8; font-size: 1.05em; }
+        .run-button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.3em;
+            border-radius: 50px;
+            cursor: pointer;
+            display: block;
+            margin: 35px auto;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .run-button:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #ff3838 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 107, 107, 0.6);
+        }
+        .run-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .output-box {
+            background: #e8f5e9;
+            border: 3px solid #4caf50;
+            padding: 30px;
+            margin-top: 30px;
+            border-radius: 12px;
+            display: none;
+        }
+        .output-box h3 { color: #2e7d32; margin-bottom: 20px; font-size: 1.6em; }
+        .output-box pre {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.7;
+            font-size: 0.95em;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* NEW: Metrics display */
+        .metrics-box {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .metrics-box h4 { color: #1976d2; margin-bottom: 15px; }
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #bbdefb;
+        }
+        .metric-label { font-weight: 600; color: #424242; }
+        .metric-value { color: #1976d2; font-family: monospace; }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+            padding: 25px;
+            display: none;
+        }
+        .tech-stack {
+            background: #e3f2fd;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 12px;
+        }
+        .tech-stack h4 { color: #1976d2; margin-bottom: 15px; font-size: 1.4em; }
+        .tech-stack ul { list-style: none; }
+        .tech-stack li { 
+            padding: 8px 0; 
+            color: #424242;
+            font-size: 1.05em;
+        }
+        .tech-stack li:before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #666;
+            font-size: 1em;
+            border-top: 2px solid #f0f0f0;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 RescueSync Agent</h1>
+            <p>AI-Powered Multi-Step Disaster Response Coordinator</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Enhanced with Memory, Performance Tracking & Multi-Scenario Support</p>
+        </div>
+        
+        <div class="content">
+            <!-- NEW: Scenario Type Selector -->
+            <div class="scenario-selector">
+                <h3>🎯 Select Disaster Scenario Type</h3>
+                <select id="scenarioType" onchange="updateScenarioDisplay()">
+                    <option value="building_collapse">🏢 Building Collapse</option>
+                    <option value="earthquake">🌍 Earthquake Response</option>
+                    <option value="flood">🌊 Flood Evacuation</option>
+                </select>
+            </div>
+            
+            <div class="scenario-box" id="scenarioDisplay">
+                <h3 id="scenarioTitle">🏢 Building Collapse Scenario</h3>
+                <div id="scenarioContent">
+                    <p><strong>Incident:</strong> 5-story residential building collapsed in downtown area at 14:23 hours</p>
+                    <ul>
+                        <li><strong>Floor 3:</strong> Completely collapsed, 12 estimated occupants trapped, structure highly unstable</li>
+                        <li><strong>Floor 2:</strong> 8 confirmed casualties, structure accessible, immediate medical attention needed</li>
+                        <li><strong>Basement:</strong> 5 estimated occupants, life signs detected by K-9 unit, difficult access</li>
+                    </ul>
+                    <p style="margin-top: 18px;"><strong>Available Response Teams:</strong></p>
+                    <ul>
+                        <li><strong>🔥 Fire_Alpha:</strong> Structural rescue specialists (8 members)</li>
+                        <li><strong>⚕️ Medical_Beta:</strong> Emergency medical team (6 members)</li>
+                        <li><strong>🐕 K9_Gamma:</strong> Search and rescue with detection dogs (4 members)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tech-stack">
+                <h4>🛠️ Enhanced Technology Stack</h4>
+                <ul>
+                    <li>Amazon Bedrock (Claude 3.5 Sonnet v2 via Inference Profile)</li>
+                    <li>AgentCore Memory Simulation (Persistent Context)</li>
+                    <li>Performance Metrics Tracking (Execution Time, Cost, Tokens)</li>
+                    <li>Multi-Scenario Support (3 disaster types)</li>
+                    <li>AWS Lambda (Python 3.11, Optimized Serverless)</li>
+                    <li>Amazon API Gateway (REST API)</li>
+                    <li>Amazon S3 (Static Website Hosting)</li>
+                </ul>
+            </div>
+
+            <button class="run-button" onclick="runAgent()" id="runBtn">
+                ▶️ Run RescueSync Agent
+            </button>
+
+            <div id="loading" class="loading">
+                Multi-step reasoning in progress...<br>
+                <small>(Analyzing priorities → Allocating resources → Creating timeline)</small>
+            </div>
+
+            <div id="output" class="output-box">
+                <h3>🤖 AI Coordination Output</h3>
+                <pre id="result"></pre>
+            </div>
+            
+            <!-- NEW: Metrics Display -->
+            <div id="metrics" class="metrics-box">
+                <h4>📊 Performance & Memory Metrics</h4>
+                <div class="metric-item">
+                    <span class="metric-label">Execution Time:</span>
+                    <span class="metric-value" id="metricTime">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Estimated Cost:</span>
+                    <span class="metric-value" id="metricCost">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Tokens Processed:</span>
+                    <span class="metric-value" id="metricTokens">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Incident ID:</span>
+                    <span class="metric-value" id="metricIncident">-</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Total Incidents (Session):</span>
+                    <span class="metric-value" id="metricTotal">-</span>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p><strong>Built for AWS AI Agent Global Hackathon 2025</strong></p>
+                <p>Powered by Amazon Bedrock AgentCore & Claude 3.5 Sonnet</p>
+                <p>Multi-step reasoning | Persistent memory | Performance tracking | Multi-scenario support</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Scenario definitions
+        const scenarios = {
+            building_collapse: {
+                title: "🏢 Building Collapse Scenario",
+                content: `<p><strong>Incident:</strong> 5-story residential building collapsed at 14:23 hours</p>
+                <ul>
+                    <li><strong>Floor 3:</strong> Completely collapsed, 12 occupants trapped, highly unstable</li>
+                    <li><strong>Floor 2:</strong> 8 casualties confirmed, accessible, needs medical attention</li>
+                    <li><strong>Basement:</strong> 5 occupants, K-9 detected life signs, difficult access</li>
+                </ul>`,
+                scenario_text: `INCIDENT: 5-story residential building collapsed
+
+REPORTS:
+- Fire_Alpha: Third floor collapsed, hearing tapping sounds from debris
+- Medical_Beta: Multiple casualties visible on floor 2, 3 confirmed critical
+- K9_Gamma: Search dog detected strong life signs in basement area
+
+BUILDING STATUS:
+- Floor 2: Accessible, 8 casualties present
+- Floor 3: Collapsed, 12 occupants trapped, structure unstable
+- Basement: Difficult access, 5 occupants, confirmed life signs
+
+AVAILABLE TEAMS:
+- Fire_Alpha: Structural rescue specialists, heavy equipment, 8 members
+- Medical_Beta: Emergency medical team, trauma expertise, 6 members
+- K9_Gamma: Search and rescue with trained detection dogs, 4 members
+
+TASK: Coordinate immediate response with priority zones and team assignments`
+            },
+            earthquake: {
+                title: "🌍 Earthquake Response Scenario",
+                content: `<p><strong>Incident:</strong> Magnitude 7.2 earthquake struck urban area at 03:47 hours</p>
+                <ul>
+                    <li><strong>Zone A:</strong> Hospital partially collapsed, 50+ patients trapped, critical infrastructure</li>
+                    <li><strong>Zone B:</strong> Residential district, 15 buildings damaged, 200+ residents</li>
+                    <li><strong>Zone C:</strong> Shopping mall, structural damage, 30 people trapped inside</li>
+                </ul>`,
+                scenario_text: `INCIDENT: Magnitude 7.2 earthquake struck urban area
+
+DAMAGE ASSESSMENT:
+- Zone A (Hospital): Partial collapse, 50+ patients trapped, medical equipment damaged
+- Zone B (Residential): 15 buildings damaged, 200+ residents displaced, gas leaks detected
+- Zone C (Shopping Mall): Structural damage, 30 people trapped, aftershock risk high
+
+AFTERSHOCK WARNING: 60% probability of 5.0+ magnitude aftershock in next 6 hours
+
+AVAILABLE TEAMS:
+- Fire_Alpha: Heavy urban search and rescue, structural experts, 8 members
+- Medical_Beta: Trauma care and triage specialists, 6 members
+- K9_Gamma: Earthquake victim detection, 2 dogs + handlers, 4 members
+
+TASK: Coordinate earthquake response considering aftershock risks and infrastructure priority`
+            },
+            flood: {
+                title: "🌊 Flood Evacuation Scenario",
+                content: `<p><strong>Incident:</strong> Flash flood emergency, water rising 6 inches per hour</p>
+                <ul>
+                    <li><strong>Sector 1:</strong> Nursing home, 40 elderly residents, ground floor flooded</li>
+                    <li><strong>Sector 2:</strong> Residential area, 80 families on rooftops, water 8 feet deep</li>
+                    <li><strong>Sector 3:</strong> School building, 25 children + 5 staff trapped on second floor</li>
+                </ul>`,
+                scenario_text: `INCIDENT: Flash flood emergency - water rising 6 inches per hour
+
+SITUATION:
+- Sector 1 (Nursing Home): 40 elderly residents, ground floor flooded, mobility issues
+- Sector 2 (Residential): 80 families on rooftops, water 8 feet deep, hypothermia risk
+- Sector 3 (School): 25 children + 5 staff on second floor, limited supplies
+
+WATER CONDITIONS: Rising rapidly, contamination risk, strong currents in main streets
+WEATHER: Rain continuing for next 4 hours, temperature 15°C
+
+AVAILABLE TEAMS:
+- Fire_Alpha: Water rescue specialists, boats available, 8 members
+- Medical_Beta: Emergency medical with cold-water injury expertise, 6 members
+- K9_Gamma: Search and rescue adapted for flood conditions, 4 members
+
+TASK: Coordinate flood evacuation prioritizing vulnerable populations and rising water risks`
+            }
+        };
+
+        function updateScenarioDisplay() {
+            const type = document.getElementById('scenarioType').value;
+            const scenario = scenarios[type];
+            document.getElementById('scenarioTitle').innerHTML = scenario.title;
+            document.getElementById('scenarioContent').innerHTML = scenario.content;
+        }
+
+        async function runAgent() {
+            const btn = document.getElementById('runBtn');
+            const loading = document.getElementById('loading');
+            const output = document.getElementById('output');
+            const metrics = document.getElementById('metrics');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+            loading.style.display = 'block';
+            output.style.display = 'none';
+            metrics.style.display = 'none';
+
+            const scenarioType = document.getElementById('scenarioType').value;
+            const scenario = scenarios[scenarioType];
+
+            try {
+                // REPLACE WITH YOUR API GATEWAY URL
+                const apiUrl = 'https://mpodup1rl1.execute-api.us-east-1.amazonaws.com/prod';
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        scenario: scenario.scenario_text,
+                        scenario_type: scenarioType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                result.textContent = data.coordination_plan;
+                output.style.display = 'block';
+                
+                // Display metrics
+                if (data.performance_metrics && data.memory_stats) {
+                    document.getElementById('metricTime').textContent = 
+                        `${data.performance_metrics.execution_time_seconds}s`;
+                    document.getElementById('metricCost').textContent = 
+                        `$${data.performance_metrics.estimated_cost_usd}`;
+                    document.getElementById('metricTokens').textContent = 
+                        `${data.performance_metrics.estimated_tokens} (${data.performance_metrics.tokens_per_second}/s)`;
+                    document.getElementById('metricIncident').textContent = 
+                        data.memory_stats.incident_id;
+                    document.getElementById('metricTotal').textContent = 
+                        data.memory_stats.total_incidents_coordinated;
+                    metrics.style.display = 'block';
+                }
+
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}\n\nCheck:\n✓ API Gateway URL correct\n✓ Lambda deployed\n✓ CORS enabled`;
+                output.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = '▶️ Run Again';
+            }
+        }
+    </script>
+</body>
+</html>
